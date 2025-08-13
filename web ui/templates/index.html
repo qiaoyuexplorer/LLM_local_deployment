@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿里百炼聊天助手</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #1890ff;
+        }
+        .chat-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            height: 500px;
+            overflow-y: auto;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #1890ff;
+            color: white;
+            margin-left: auto;
+        }
+        .bot-message {
+            background-color: #f0f0f0;
+            margin-right: auto;
+        }
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        #user-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        #send-button {
+            padding: 12px 20px;
+            background-color: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #send-button:hover {
+            background-color: #40a9ff;
+        }
+        #send-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .typing-indicator {
+            display: none;
+            color: #666;
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>阿里百炼聊天助手</h1>
+            <p>基于 qwen-max 模型的智能对话</p>
+        </div>
+
+        <div class="chat-container" id="chat-box">
+            <div class="typing-indicator" id="typing">AI 正在思考...</div>
+            <!-- 消息将在这里动态添加 -->
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="输入你的问题..." autocomplete="off">
+            <button id="send-button" onclick="sendMessage()">发送</button>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const typingIndicator = document.getElementById('typing');
+
+        // 按Enter键发送消息
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // 添加用户消息到聊天框
+            addMessage(message, 'user');
+            userInput.value = '';
+            sendButton.disabled = true;
+
+            // 显示"正在输入"指示器
+            typingIndicator.style.display = 'block';
+
+            // 获取聊天历史
+            const messages = Array.from(chatBox.querySelectorAll('.message')).map(msg => {
+                return {
+                    role: msg.classList.contains('user-message') ? 'user' : 'assistant',
+                    content: msg.textContent
+                };
+            });
+
+            // 添加系统消息
+            messages.unshift({
+                role: 'system',
+                content: '你是一个有帮助的AI助手'
+            });
+
+            // 发送请求到后端
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ messages })
+            })
+            .then(response => response.json())
+            .then(data => {
+                typingIndicator.style.display = 'none';
+                sendButton.disabled = false;
+
+                if (data.error) {
+                    addMessage(`错误: ${data.error}`, 'bot');
+                } else {
+                    addMessage(data.response, 'bot');
+                }
+            })
+            .catch(error => {
+                typingIndicator.style.display = 'none';
+                sendButton.disabled = false;
+                addMessage(`请求失败: ${error}`, 'bot');
+            });
+        }
+
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
+            messageDiv.textContent = text;
+
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    </script>
+</body>
+</html>
