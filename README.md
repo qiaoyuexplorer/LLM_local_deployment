@@ -1,5 +1,5 @@
 LLM Web UI 项目说明
-![image](web ui.png)
+![image](web_ui.png)
 项目概述
 
 这是一个基于大型语言模型(LLM)的Web用户界面项目，包含多个Python脚本文件，用于与不同AI平台进行交互。
